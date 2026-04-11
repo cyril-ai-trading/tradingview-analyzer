@@ -23,6 +23,7 @@ const { TVScreener, screen, printScreen, printDetail } = require('./tv_screener'
 const {
   getEconomicCalendar, getEarningsCalendar, getDividendCalendar,
   printEconomicCalendar, printEarningsCalendar, printDividendCalendar,
+  dedupEarnings,
 } = require('./tv_calendar');
 
 // Lazy-load heavy modules (Playwright etc.)
@@ -203,7 +204,10 @@ EXEMPLES
     const importance = parseInt(flag('importance', '2'), 10);
     const countries  = (flag('countries', 'US,EU,GB,JP,FR,DE,CN') ?? '').split(',');
     const markets    = (flag('markets', '') ?? '').split(',').filter(Boolean);
-    const limit      = parseInt(flag('limit', '100'), 10);
+    const capMin     = parseFloat(flag('cap-min', '0'));
+    const noOtc      = flagBool('no-otc');
+    const dedup      = flagBool('dedup') || noOtc;
+    const limit      = parseInt(flag('limit', capMin > 0 || dedup ? '500' : '100'), 10);
     const fromFlag   = flag('from', null);
     const toFlag     = flag('to', null);
     const from = fromFlag ? new Date(fromFlag) : new Date();
@@ -214,7 +218,9 @@ EXEMPLES
       printEconomicCalendar(await getEconomicCalendar({ from, to, countries, importance }));
     } else if (type === 'earnings') {
       banner(`Calendrier Earnings`);
-      printEarningsCalendar(await getEarningsCalendar({ from, to, markets, limit }));
+      let earns = await getEarningsCalendar({ from, to, markets, limit, capMin });
+      if (dedup) earns = dedupEarnings(earns, { noOtc });
+      printEarningsCalendar(earns);
     } else if (type === 'dividends' || type === 'div') {
       banner(`Calendrier Dividendes`);
       printDividendCalendar(await getDividendCalendar({ from, to, markets, limit }));
@@ -222,7 +228,7 @@ EXEMPLES
       banner(`Tous les calendriers`);
       const [eco, earn, div] = await Promise.all([
         getEconomicCalendar({ from, to, countries, importance }),
-        getEarningsCalendar({ from, to, markets, limit }),
+        getEarningsCalendar({ from, to, markets, limit, capMin }),
         getDividendCalendar({ from, to, markets, limit }),
       ]);
       printEconomicCalendar(eco);

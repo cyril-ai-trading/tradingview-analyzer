@@ -130,6 +130,8 @@ async function getEarningsCalendar ({
   to      = daysFromNow(7),
   markets = [],
   limit   = 50,
+  capMin  = 0,          // milliards USD (0 = pas de filtre)
+  commonOnly = true,    // exclure actions préférentielles (symboles avec /)
 } = {}) {
   const fromTs = toUnix(from);
   const toTs   = toUnix(to);
@@ -162,6 +164,8 @@ async function getEarningsCalendar ({
     body
   );
 
+  const timeLabel = t => ({ '-1': 'BMO', '0': '?', '1': 'AMC' })[String(t)] ?? '--';
+
   return (resp.data ?? []).map(row => {
     const d = row.d;
     const releaseDate = d[2] ?? d[3];
@@ -171,7 +175,7 @@ async function getEarningsCalendar ({
       name:             d[0],
       company:          d[1],
       date:             releaseDate ? fromUnix(releaseDate) : null,
-      time:             releaseTime ?? '--',          // 'BMO' | 'AMC' | '--'
+      time:             timeLabel(releaseTime),       // 'BMO' | 'AMC' | '?'
       epsEstimate:      d[6],
       epsActual:        d[7],
       epsSurprise:      d[8],
@@ -184,7 +188,27 @@ async function getEarningsCalendar ({
       quarter:          d[15],
       currency:         d[16],
     };
-  }).sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''));
+  }).filter(e => !commonOnly || !e.symbol.includes('/'))
+    .filter(e => capMin <= 0 || (e.marketCap ?? 0) >= capMin * 1e9)
+    .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''));
+}
+
+// ─── Dedup helper ─────────────────────────────────────────────────────────────
+
+function dedupEarnings(events, { noOtc = false } = {}) {
+  // 1. Optionnellement exclure OTC
+  if (noOtc) events = events.filter(e => !e.symbol.startsWith('OTC:'));
+
+  // 2. Dédoublonner par nom d'entreprise : garder la version exchange réglementé
+  const priority = s => s.startsWith('NYSE:') || s.startsWith('NASDAQ:') || s.startsWith('EURONEXT:') ? 0 : 1;
+  const seen = new Map();
+  for (const e of events) {
+    const key = (e.company ?? e.name ?? e.symbol).toLowerCase().slice(0, 20);
+    if (!seen.has(key) || priority(e.symbol) < priority(seen.get(key).symbol)) {
+      seen.set(key, e);
+    }
+  }
+  return [...seen.values()].sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''));
 }
 
 // ─── 3. Calendrier Dividendes ─────────────────────────────────────────────────
@@ -319,4 +343,5 @@ module.exports = {
   printEconomicCalendar,
   printEarningsCalendar,
   printDividendCalendar,
+  dedupEarnings,
 };
