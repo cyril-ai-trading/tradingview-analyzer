@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Playwright browsers (reinstall with: npx playwright install chromium)
+ms-playwright/
+
+# Résultats temporaires
+iv_results*.json
+iv_data.json
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+desktop.ini
+Thumbs.db
+
+# Scripts temporaires de run/test
+run_iv*.ps1
+run_iv*.bat
+run_scraper.ps1
+install_chromium.ps1
+test_expiries.js
+fetch_iv.js
+fetch_iv2.js
+fetch_iv3.js
+fetch_iv4.js
+
+# Secrets éventuels
+.env
+*.env

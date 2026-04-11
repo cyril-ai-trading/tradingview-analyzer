@@ -1,0 +1,18 @@
+{
+  "name": "tradingview-analyzer",
+  "version": "1.0.0",
+  "description": "Analyze any market data from TradingView via CDP",
+  "main": "market_analyzer.js",
+  "bin": {
+    "tv-analyze": "./analyze.js"
+  },
+  "scripts": {
+    "test": "node analyze.js --symbol AAPL --timeframe D --bars 10"
+  },
+  "dependencies": {
+    "cheerio": "^1.2.0",
+    "chrome-remote-interface": "^0.33.2",
+    "playwright": "^1.59.1",
+    "ws": "^8.18.0"
+  }
+}
