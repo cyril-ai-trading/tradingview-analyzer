@@ -26,10 +26,11 @@ const {
   dedupEarnings,
 } = require('./tv_calendar');
 
-// Lazy-load heavy modules (Playwright etc.)
-let _indicators = null, _optionsChain = null;
+// Lazy-load heavy modules
+let _indicators = null, _optionsChain = null, _candidates = null;
 function getIndicatorsMod () { return _indicators  || (_indicators  = require('./tv_indicators')); }
 function getOptionsMod    () { return _optionsChain || (_optionsChain = require('./options_chain')); }
+function getCandidatesMod () { return _candidates  || (_candidates  = require('./candidates')); }
 
 // ─── Parse CLI arguments ──────────────────────────────────────────────────────
 
@@ -142,6 +143,14 @@ async function run () {
 TradingView Market Data Analyzer
 ─────────────────────────────────────────────────────────────────────────────
 
+AGENT DE TRADING — MODULE 1
+  candidates  --days-min 10 --days-max 25 --market america
+              --days-min N    Earnings dans minimum N jours (défaut: 10)
+              --days-max N    Earnings dans maximum N jours (défaut: 25)
+              --min-cap  N    Capitalisation mini en Mds$ (défaut: 5)
+              --output   console|json|file
+              (Résultat mis en cache 12h dans ./cache/candidates_DATE.json)
+
 COMMANDES DONNÉES DE MARCHÉ
   quote       --symbol <SYM>
   ohlcv       --symbol <SYM> [--timeframe TF] [--bars N]
@@ -194,6 +203,18 @@ EXEMPLES
   node analyze.js screen     --market america --sector Technology --pe-max 25
   node analyze.js calendar   --type earnings --from 2026-04-20 --to 2026-05-05
 `);
+    return;
+  }
+
+  // ── MODULE 1 : Candidates ───────────────────────────────────────────────────
+  if (command === 'candidates') {
+    const daysMin = parseInt(flag('days-min', '10'), 10);
+    const daysMax = parseInt(flag('days-max', '25'), 10);
+    const market  = flag('market',  'america');
+    const minCapB = parseFloat(flag('min-cap', '5'));
+    const output  = flag('output',  'console');
+    const { runCandidates } = getCandidatesMod();
+    await runCandidates({ daysMin, daysMax, market, minCapB, output });
     return;
   }
 

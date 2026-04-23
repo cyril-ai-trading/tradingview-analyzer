@@ -8,6 +8,10 @@ ms-playwright/
 iv_results*.json
 iv_data.json
 
+# Cache et logs du trading agent
+cache/
+logs/
+
 # Logs
 *.log
 npm-debug.log*
